@@ -1,0 +1,83 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: mysql-dados
+  labels:
+    type: mysql-dados
+spec:
+  storageClassName: manual
+  capacity: 
+    storage: 100Mi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: /meubanco/
+
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-dados
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+spec:
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+      - name: mysql
+        image: guilhermesantos21/projeto-database:1.0
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3306
+          name: mysql
+        volumeMounts:
+        - name: mysql-dados
+          mountPath: /var/lib/mysql
+      volumes:
+      - name: mysql-dados
+        persistentVolumeClaim:
+          claimName: mysql-dados
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: projeto-app-php-deployment
+  labels:
+    app: projeto-app-php
+spec:
+  replicas: 6
+  selector:
+    matchLabels:
+      app: projeto-app-php
+  template:
+    metadata:
+      labels:
+        app: projeto-app-php
+    spec:
+      containers:
+      - name: projeto-app-php
+        image: guilhermesantos21/projeto-backend:1.0
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80
